@@ -6,7 +6,7 @@ use LWP::UserAgent;
 BEGIN {
 	use Exporter ();
 	use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-	$VERSION     = 0.1;
+	$VERSION     = 0.2;
 	@ISA         = qw (Exporter);
 	#Give a hoot don't pollute, do not export more than needed by default
 	@EXPORT      = qw ();
@@ -42,7 +42,9 @@ If you feed this an invalid ip address, LWP will complain.
 Note: while there is HTTP::ProxyCheck it is much slower, though it
 does a lot of input validation.
 HTTP::CheckProxy is intended to be useful in processing lots of 
-candidate proxies and in recording useful information.
+candidate proxies and in recording useful information. To do this,
+make one object and repeatedly invoke the test() method with
+different IP addresses.
 
 =head1 USAGE
 
@@ -83,6 +85,7 @@ LICENSE file included with this module.
 
 perl(1).
 
+=head1 METHODS
 =cut
 
 ############################################# main pod documentation end ##
@@ -92,7 +95,9 @@ perl(1).
  Usage     : HTTP::CheckProxy->new($ip);
  Purpose   : constructor
  Returns   : object instance
- Argument  : IPv4
+ Argument  : Mandatory first paramenter:
+                name or ip address of candidate proxy. Do not include http:// .
+             Optional second parameter: url (including the http://) to try to fetch. If this is invalid or unreachable the results of the test are meaningless, but this is NOT checked.
  Throws    : We should probably throw an exception if the ip address under test is unreachable
  Comments  : 
 
@@ -100,12 +105,13 @@ See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated prox
 
 =cut
 
+my $target_url="http://www.hudes.org";
 
  sub new
  {
- 	my ($class, $ip) = @_;
-
+ 	my ($class, $ip, $target) = @_;
  	my $self = bless ({}, ref ($class) || $class);
+	$target_url= $target if defined $target;
 	$self->test($ip);
  	return ($self);
  }
@@ -118,10 +124,20 @@ See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated prox
   }
   sub _set_response {
     my ($self,$param) = @_;
-    $response = $param || die "OpenPrexyDetector - no response to store";
+    $response = $param || die "OpenProxyDetector - no response to store";
   }
 }
 
+{
+ my $port;#the port the proxy answered on
+ sub get_proxy_port {
+   return $port;
+ }
+ sub _set_proxy_port {
+   my ($self, $param) = @_;
+   $port = $port || die "OpenProxyDetector - no port to store";
+ }
+}
 
 ################################################ subroutine header begin ##
 =head2 test
@@ -141,9 +157,22 @@ See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated prox
 sub  test {
     my $self = shift;
     my $ip = shift ||  die "no ip address supplied to test";
-    my $browser = LWP::UserAgent->new(timeout =>10, max_size =>2048, requests_redirectable => []);#fixme -- come back later and stuff in a fake agent name
-	$browser->proxy("http","http://$ip");
-    my $response =  $browser->head("http://www.hudes.org/");
+    my @ports = qw/80 1080 8080 8001/;
+    my $port;
+    my $response;
+    my $browser = LWP::UserAgent->new(
+				      timeout =>10, max_size =>2048,
+				      requests_redirectable => []
+				     );#fixme -- come back later and stuff in a fake agent name
+    foreach $port (@ports)
+      {
+	$browser->proxy("http","http://$ip:".$port);
+	$response = $browser->head($target_url);
+	if(! $response->is_error) {#keep going while we don't get a successful proxying
+	  $self->_set_proxy_port($port);
+	  last;
+	}
+      }
     $self->_set_response($response);
     return $response->code();
 }

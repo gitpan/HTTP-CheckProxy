@@ -16,7 +16,8 @@ DESCRIPTION
     Note: while there is HTTP::ProxyCheck it is much slower, though it does
     a lot of input validation. HTTP::CheckProxy is intended to be useful in
     processing lots of candidate proxies and in recording useful
-    information.
+    information. To do this, make one object and repeatedly invoke the
+    test() method with different IP addresses.
 
 USAGE
       my $open_proxy_test = HTTP::CheckProxy->new($ip);
@@ -48,11 +49,18 @@ COPYRIGHT
 SEE ALSO
     perl(1).
 
+METHODS
+=cut
+    ############################################# main pod documentation end
+    ##
+
   new
      Usage     : HTTP::CheckProxy->new($ip);
      Purpose   : constructor
      Returns   : object instance
-     Argument  : IPv4
+     Argument  : Mandatory first paramenter:
+                    name or ip address of candidate proxy. Do not include http:// .
+                 Optional second parameter: url (including the http://) to try to fetch. If this is invalid or unreachable the results of the test are meaningless, but this is NOT checked.
      Throws    : We should probably throw an exception if the ip address under test is unreachable
      Comments  : 
 
