@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: HTTP-CheckProxy
-version: 0.2
+version: 0.4
 author:
   - ~
 abstract: Perl module for testing for open proxies
@@ -10,5 +10,5 @@ requires:
 provides:
   HTTP::CheckProxy:
     file: lib/HTTP/CheckProxy.pm
-    version: 0.2
+    version: 0.4
 generated_by: Module::Build version 0.24

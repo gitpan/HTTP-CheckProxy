@@ -6,7 +6,7 @@ use LWP::UserAgent;
 BEGIN {
 	use Exporter ();
 	use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-	$VERSION     = 0.2;
+	$VERSION     = 0.4;
 	@ISA         = qw (Exporter);
 	#Give a hoot don't pollute, do not export more than needed by default
 	@EXPORT      = qw ();
@@ -86,6 +86,7 @@ LICENSE file included with this module.
 perl(1).
 
 =head1 METHODS
+
 =cut
 
 ############################################# main pod documentation end ##
@@ -95,7 +96,7 @@ perl(1).
  Usage     : HTTP::CheckProxy->new($ip);
  Purpose   : constructor
  Returns   : object instance
- Argument  : Mandatory first paramenter:
+ Argument  : Optional first paramenter:
                 name or ip address of candidate proxy. Do not include http:// .
              Optional second parameter: url (including the http://) to try to fetch. If this is invalid or unreachable the results of the test are meaningless, but this is NOT checked.
  Throws    : We should probably throw an exception if the ip address under test is unreachable
@@ -107,14 +108,14 @@ See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated prox
 
 my $target_url="http://www.hudes.org";
 
- sub new
- {
- 	my ($class, $ip, $target) = @_;
- 	my $self = bless ({}, ref ($class) || $class);
-	$target_url= $target if defined $target;
-	$self->test($ip);
- 	return ($self);
- }
+sub new
+  {
+    my ($class, $ip, $target) = @_;
+    my $self = bless ({}, ref ($class) || $class);
+    $target_url= $target if defined $target;
+    $self->test($ip) if defined $ip;
+    return ($self);
+  }
 
 
 {
@@ -128,6 +129,18 @@ my $target_url="http://www.hudes.org";
   }
 }
 
+=head2 get_proxy_port
+
+ Usage     :  $open_proxy_test->get_proxy_port;
+ Purpose   : tell which port successfully proxied 
+ Returns   : 16-bit integer port number
+ Argument  : none
+ Throws    : nothing
+ Comments  : only valid when  $open_proxy_test->guilty is TRUE , may be undef otherwise (or have incorrect info if you reused the object)! 
+See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated proxies and other abuse.
+
+=cut
+
 {
  my $port;#the port the proxy answered on
  sub get_proxy_port {
@@ -135,14 +148,14 @@ my $target_url="http://www.hudes.org";
  }
  sub _set_proxy_port {
    my ($self, $param) = @_;
-   $port = $port || die "OpenProxyDetector - no port to store";
+   $port = $param || die "OpenProxyDetector - no port to store";
  }
 }
 
 ################################################ subroutine header begin ##
 =head2 test
 
- Usage     : test($ip)
+ Usage     :  $open_proxy_test->test($ip)
  Purpose   : tries to fetch a known web page via the supplied ip as proxy.
  Returns   : true (proxy fetch successful) or false (it failed to fetch)
  Argument  : IPv4
@@ -157,7 +170,7 @@ See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated prox
 sub  test {
     my $self = shift;
     my $ip = shift ||  die "no ip address supplied to test";
-    my @ports = qw/80 1080 8080 8001/;
+    my @ports = qw/80 8080 8001 scx-proxy dproxy sdproxy funkproxy dpi-proxy proxy-gateway ace-proxy plgproxy csvr-proxy flamenco-proxy awg-proxy trnsprntproxy castorproxy ttlpriceprocy privoxy ezproxy ezproxy-2/;#1080 is SOCKS
     my $port;
     my $response;
     my $browser = LWP::UserAgent->new(
@@ -168,6 +181,7 @@ sub  test {
       {
 	$browser->proxy("http","http://$ip:".$port);
 	$response = $browser->head($target_url);
+	last unless defined $response;
 	if(! $response->is_error) {#keep going while we don't get a successful proxying
 	  $self->_set_proxy_port($port);
 	  last;

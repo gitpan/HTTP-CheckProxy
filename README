@@ -50,15 +50,11 @@ SEE ALSO
     perl(1).
 
 METHODS
-=cut
-    ############################################# main pod documentation end
-    ##
-
   new
      Usage     : HTTP::CheckProxy->new($ip);
      Purpose   : constructor
      Returns   : object instance
-     Argument  : Mandatory first paramenter:
+     Argument  : Optional first paramenter:
                     name or ip address of candidate proxy. Do not include http:// .
                  Optional second parameter: url (including the http://) to try to fetch. If this is invalid or unreachable the results of the test are meaningless, but this is NOT checked.
      Throws    : We should probably throw an exception if the ip address under test is unreachable
@@ -66,6 +62,15 @@ METHODS
 
     See Also : HTTPD::ADS::AbuseNotify for sending complaints about
     validated proxies and other abuse.
+
+  get_proxy_port
+     Usage     :  $open_proxy_test->get_proxy_port;
+     Purpose   : tell which port successfully proxied 
+     Returns   : 16-bit integer port number
+     Argument  : none
+     Throws    : nothing
+     Comments  : only valid when  $open_proxy_test->guilty is TRUE , may be undef otherwise (or have incorrect info if you reused the object)! 
+    See Also   : HTTPD::ADS::AbuseNotify for sending complaints about validated proxies and other abuse.
 
   guilty
      Usage     : $open_proxy_test->guilty
